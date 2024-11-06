@@ -1,6 +1,5 @@
-// src/pages/Login.jsx
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom'; // Import useNavigate và Link
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/axiosConfig'; // Import Axios instance
 
 const Login = () => {
@@ -13,6 +12,7 @@ const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault(); // Ngăn chặn reload trang
         setLoading(true); // Bắt đầu loading
+        setError(''); // Reset thông báo lỗi
         try {
             const response = await api.post('/login', { email, password }); // Gửi yêu cầu login với email và password
             console.log('Login response:', response.data); // Ghi log phản hồi từ API
@@ -29,7 +29,7 @@ const Login = () => {
             navigate('/profile'); // Điều hướng đến trang người dùng
         } catch (err) {
             console.error('Login error:', err.response ? err.response.data : err.message); // Ghi log lỗi từ phản hồi
-            setError('Login failed!'); // Cập nhật thông báo lỗi
+            setError('Invalid credentials.'); // Cập nhật thông báo lỗi
         } finally {
             setLoading(false); // Kết thúc loading
         }
@@ -42,14 +42,14 @@ const Login = () => {
                 <input
                     type="email"
                     placeholder='Email'
-                    className='bg-slate-100 p-3 rounded-lg'
+                    value={email}
                     onChange={(e) => setEmail(e.target.value)} // Cập nhật state email
                     required
                 />
                 <input
                     type='password'
                     placeholder='Password'
-                    className='bg-slate-100 p-3 rounded-lg'
+                    value={password}
                     onChange={(e) => setPassword(e.target.value)} // Cập nhật state password
                     required
                 />
@@ -67,7 +67,7 @@ const Login = () => {
                 </Link>   
             </div>
             <p className='text-red-700 mt-5'>
-                {error || 'Something went wrong!'} {/* Hiển thị thông báo lỗi nếu có */}
+                {error} {/* Hiển thị thông báo lỗi nếu có */}
             </p>
         </div>
     );
