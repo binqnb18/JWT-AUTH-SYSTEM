@@ -1,27 +1,21 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Login from './pages/Login'; // Import Login component
-import ProtectedRoute from './components/ProtectedRoute'; // Import ProtectedRoute component
-import SignUp from './pages/Singup'; // Sửa tên file từ SignUp thành SignUp
-import Dashboard from './pages/Dashboard';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Home from './pages/Home.jsx';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Header from './components/Header';
+import Dashboard from './pages/Dashboard.jsx';
 
-function App() {
-    return (
-        <Router>
-            <Routes>
-                <Route path="/login" element={<Login />} /> {/* Trang đăng nhập */}
-                <Route path="/sign-up" element={<SignUp />} /> {/* Trang đăng ký */}
-                <Route 
-                    path="/profile" 
-                    element={
-                        <ProtectedRoute>
-                            <Dashboard /> {/* Trang người dùng được bảo vệ */}
-                        </ProtectedRoute>
-                    } 
-                />
-            </Routes>
-        </Router>
-    );
+export default function App() {
+  return (
+    <BrowserRouter>
+      {/* header */}
+      <Header />
+      <Routes>
+        <Route path='/' element={<Home />} />
+        <Route path='/dashboard' element={<Dashboard />} />
+        <Route path='/login' element={<Login />} />
+        <Route path='/register' element={<Register />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
-
-export default App;

@@ -1,76 +1,89 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import api from '../services/axiosConfig'; // Import Axios instance
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+    signInStart,
+    signInSuccess,
+    signInFailure,
+} from '../redux/user/userSlice';
+import api from '../services/axiosConfig'; // Import axios instance
 
-const Login = () => {
-    const [email, setEmail] = useState(''); // State cho email
-    const [password, setPassword] = useState(''); // State cho password
-    const [error, setError] = useState(''); // State cho thông báo lỗi
-    const [loading, setLoading] = useState(false); // State cho trạng thái loading
-    const navigate = useNavigate(); // Khởi tạo useNavigate
+export default function Login() {
+    const [formData, setFormData] = useState({ email: '', password: '' }); // Khởi tạo với email và password
+    const { loading, error } = useSelector((state) => state.user); // Lấy trạng thái từ Redux
 
-    const handleLogin = async (e) => {
-        e.preventDefault(); // Ngăn chặn reload trang
-        setLoading(true); // Bắt đầu loading
-        setError(''); // Reset thông báo lỗi
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.id]: e.target.value }); // Cập nhật giá trị trong formData
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault(); // Ngăn chặn hành động mặc định của form
+        dispatch(signInStart()); // Bắt đầu quá trình đăng nhập
+
         try {
-            const response = await api.post('/login', { email, password }); // Gửi yêu cầu login với email và password
-            console.log('Login response:', response.data); // Ghi log phản hồi từ API
+            // Gọi API để đăng nhập bằng axios
+            const res = await api.post('http://localhost:4000/api/auth/login', formData); // chú ý đường dẫn từ backend 
+            const data = res.data; // Lấy dữ liệu từ phản hồi
 
-            // Lưu Access Token vào localStorage
-            localStorage.setItem('accessToken', response.data.accessToken); 
+            // Kiểm tra phản hồi từ server
+            if (data.success === false) {
+                dispatch(signInFailure({ message: data.message || 'Invalid credentials.' })); // Thông báo lỗi
+                return;
+            }
 
-            // Kiểm tra cookie nếu cần
-            console.log('Cookies:', document.cookie); // Ghi log cookie hiện tại
+            // Gọi action thành công và điều hướng
+            dispatch(signInSuccess(data)); // Lưu thông tin người dùng vào Redux
+            
+            // Lưu Access Token vào Local Storage
+            localStorage.setItem('accessToken', data.accessToken); // Lưu Access Token trong Local Storage
 
-            alert('Login successful!'); // Thông báo thành công
-
-            // Điều hướng đến trang profile
-            navigate('/profile'); // Điều hướng đến trang người dùng
-        } catch (err) {
-            console.error('Login error:', err.response ? err.response.data : err.message); // Ghi log lỗi từ phản hồi
-            setError('Invalid credentials.'); // Cập nhật thông báo lỗi
-        } finally {
-            setLoading(false); // Kết thúc loading
+            // Không cần làm gì với Refresh Token ở frontend vì nó đã được lưu trong HttpOnly Cookie
+            
+            navigate('/dashboard'); // Điều hướng đến trang chính sau khi đăng nhập thành công
+        } catch (error) {
+            dispatch(signInFailure({ message: 'Login failed. Please try again.' })); // Thông báo lỗi trong trường hợp ngoại lệ
         }
     };
 
     return (
         <div className='p-3 max-w-lg mx-auto'>
-            <h2 className='text-center'>Login</h2>
-            <form onSubmit={handleLogin} className='flex flex-col gap-4'>
+            <h1 className='text-3xl text-center font-semibold my-7'>Login</h1>
+            <form onSubmit={handleSubmit} className='flex flex-col gap-4'>   
                 <input
-                    type="email"
+                    type='email'
                     placeholder='Email'
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)} // Cập nhật state email
+                    id='email'
+                    className='bg-slate-100 p-3 rounded-lg'
+                    onChange={handleChange}
                     required
                 />
                 <input
                     type='password'
                     placeholder='Password'
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)} // Cập nhật state password
+                    id='password'
+                    className='bg-slate-100 p-3 rounded-lg'
+                    onChange={handleChange}
                     required
                 />
-                <button 
+                <button
                     disabled={loading}
                     className='bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80'
                 >
-                    {loading ? 'Loading...' : 'Sign In'} {/* Hiển thị trạng thái button */}
+                    {loading ? 'Loading...' : 'Sign In'}
                 </button>
             </form>
             <div className='flex gap-2 mt-5'>
                 <p>Don't Have an account?</p>
-                <Link to='/sign-up'> 
-                    <span className='text-blue-500'>Sign up</span>
-                </Link>   
+                <Link to='/register'>
+                    <span className='text-blue-500'>Register</span>
+                </Link>
             </div>
             <p className='text-red-700 mt-5'>
-                {error} {/* Hiển thị thông báo lỗi nếu có */}
+                {error ? error.message || 'Something went wrong!' : ''}
             </p>
         </div>
     );
-};
-
-export default Login;
+}
