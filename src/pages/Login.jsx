@@ -1,87 +1,84 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-    signInStart,
-    signInSuccess,
-    signInFailure,
-} from '../redux/user/userSlice';
-import api from '../services/axiosConfig'; // Import axios instance
+import { signInStart, signInSuccess, signInFailure } from '../redux/user/userSlice';
+import { loginUser } from '../services/userService';
+import { scheduleTokenRefresh } from '../Configs/axiosConfig'; // Import hàm làm mới định kỳ
 
 export default function Login() {
-    const [formData, setFormData] = useState({ email: '', password: '' }); // Khởi tạo với email và password
-    const { loading, error } = useSelector((state) => state.user); // Lấy trạng thái từ Redux
-
+    const [formData, setFormData] = useState({ email: '', password: '' });
+    const { loading, error } = useSelector((state) => state.user);
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
+    useEffect(() => {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            navigate('/dashboard');
+        }
+    }, [navigate]);
+
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.id]: e.target.value }); // Cập nhật giá trị trong formData
+        setFormData({ ...formData, [e.target.id]: e.target.value });
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault(); // Ngăn chặn hành động mặc định của form
-        dispatch(signInStart()); // Bắt đầu quá trình đăng nhập
+        e.preventDefault();
+        dispatch(signInStart());
 
         try {
-            // Gọi API để đăng nhập bằng axios
-            const res = await api.post('http://localhost:4000/api/auth/login', formData); // chú ý đường dẫn từ backend 
-            const data = res.data; // Lấy dữ liệu từ phản hồi
+            const data = await loginUser(formData);
 
-            // Kiểm tra phản hồi từ server
             if (data.success === false) {
-                dispatch(signInFailure({ message: data.message || 'Invalid credentials.' })); // Thông báo lỗi
+                dispatch(signInFailure({ message: data.message || 'Invalid credentials.' }));
                 return;
             }
 
-            // Gọi action thành công và điều hướng
-            dispatch(signInSuccess(data)); // Lưu thông tin người dùng vào Redux
-            
-            // Lưu Access Token vào Local Storage
-            localStorage.setItem('accessToken', data.accessToken); // Lưu Access Token trong Local Storage
+            localStorage.setItem('accessToken', data.accessToken);
+            console.log("Access Token saved to localStorage:", data.accessToken);
 
-            // Không cần làm gì với Refresh Token ở frontend vì nó đã được lưu trong HttpOnly Cookie
-            
-            navigate('/dashboard'); // Điều hướng đến trang chính sau khi đăng nhập thành công
+            dispatch(signInSuccess(data));
+            scheduleTokenRefresh(data.accessToken); // Bắt đầu làm mới token sau khi đăng nhập thành công
+            navigate('/dashboard');
         } catch (error) {
-            dispatch(signInFailure({ message: 'Login failed. Please try again.' })); // Thông báo lỗi trong trường hợp ngoại lệ
+            dispatch(signInFailure({ message: error.message || 'Login failed. Please try again.' }));
         }
     };
 
     return (
-        <div className='p-3 max-w-lg mx-auto'>
-            <h1 className='text-3xl text-center font-semibold my-7'>Login</h1>
-            <form onSubmit={handleSubmit} className='flex flex-col gap-4'>   
+        <div className="p-3 max-w-lg mx-auto">
+            <h1 className="text-3xl text-center font-semibold my-7">Login</h1>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <input
-                    type='email'
-                    placeholder='Email'
-                    id='email'
-                    className='bg-slate-100 p-3 rounded-lg'
+                    type="email"
+                    placeholder="Email"
+                    id="email"
+                    className="bg-slate-100 p-3 rounded-lg"
                     onChange={handleChange}
                     required
                 />
                 <input
-                    type='password'
-                    placeholder='Password'
-                    id='password'
-                    className='bg-slate-100 p-3 rounded-lg'
+                    type="password"
+                    placeholder="Password"
+                    id="password"
+                    className="bg-slate-100 p-3 rounded-lg"
                     onChange={handleChange}
                     required
                 />
                 <button
                     disabled={loading}
-                    className='bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80'
+                    className="bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80"
                 >
                     {loading ? 'Loading...' : 'Sign In'}
                 </button>
             </form>
-            <div className='flex gap-2 mt-5'>
+            <div className="flex gap-2 mt-5">
                 <p>Don't Have an account?</p>
-                <Link to='/register'>
-                    <span className='text-blue-500'>Register</span>
+                <Link to="/register">
+                    <span className="text-blue-500">Register</span>
                 </Link>
             </div>
-            <p className='text-red-700 mt-5'>
+            <p className="text-red-700 mt-5">
                 {error ? error.message || 'Something went wrong!' : ''}
             </p>
         </div>

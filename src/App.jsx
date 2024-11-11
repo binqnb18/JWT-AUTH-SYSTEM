@@ -4,15 +4,17 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Header from './components/Header';
 import Dashboard from './pages/Dashboard.jsx';
+import ProtectedRoute from './components/ProtectedRoute'; // Import ProtectedRoute
 
 export default function App() {
   return (
     <BrowserRouter>
-      {/* header */}
+      {/* Header */}
       <Header />
       <Routes>
         <Route path='/' element={<Home />} />
-        <Route path='/dashboard' element={<Dashboard />} />
+        {/* Bảo vệ route Dashboard */}
+        <Route path='/dashboard' element={<ProtectedRoute element={<Dashboard />} />} />
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />} />
       </Routes>
